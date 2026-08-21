@@ -32,6 +32,23 @@ const event = {
   musicSrc: "",
 };
 
+const appBasePath = (() => {
+  const base = import.meta.env.BASE_URL || "/";
+  return base === "/" ? "" : base.replace(/\/$/, "");
+})();
+
+function appPath() {
+  const path = window.location.pathname;
+  if (appBasePath && path.startsWith(appBasePath)) {
+    return path.slice(appBasePath.length) || "/";
+  }
+  return path;
+}
+
+function appUrl(path) {
+  return `${window.location.origin}${appBasePath}${path}`;
+}
+
 function slugify(value) {
   return value
     .trim()
@@ -71,8 +88,9 @@ function InvitePage() {
   const [rsvp, setRsvp] = useState("");
   const [musicOn, setMusicOn] = useState(false);
   const countdown = useCountdown();
-  const slug = window.location.pathname.startsWith("/invite/")
-    ? decodeURIComponent(window.location.pathname.replace("/invite/", "").replace(/\/$/, ""))
+  const currentPath = appPath();
+  const slug = currentPath.startsWith("/invite/")
+    ? decodeURIComponent(currentPath.replace("/invite/", "").replace(/\/$/, ""))
     : "";
   const dynamicGuest = slug
     ? event.guests[slug] || slug.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ")
@@ -186,10 +204,9 @@ function AdminPage() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [copied, setCopied] = useState("");
-  const base = window.location.origin;
   const guests = Object.entries(event.guests);
   const customSlug = slugify(slug || name);
-  const customUrl = customSlug ? `${base}/invite/${customSlug}` : "";
+  const customUrl = customSlug ? appUrl(`/invite/${customSlug}`) : "";
 
   async function copy(value) {
     await navigator.clipboard.writeText(value);
@@ -201,7 +218,7 @@ function AdminPage() {
     <main className="admin-dashboard">
       <header className="admin-header">
         <div><p className="eyebrow">Админ-панель</p><h1>Ссылки гостей</h1></div>
-        <a className="outline-button" href="/">Приглашение</a>
+        <a className="outline-button" href={appUrl("/")}>Приглашение</a>
       </header>
       <section className="stats-grid">
         <div><strong>{guests.length}</strong><span>Готовых ссылок</span></div>
@@ -219,7 +236,7 @@ function AdminPage() {
           <thead><tr><th>Имя</th><th>Ссылка</th><th></th></tr></thead>
           <tbody>
             {guests.map(([key, guestName]) => {
-              const url = `${base}/invite/${key}`;
+              const url = appUrl(`/invite/${key}`);
               return <tr key={key}><td>{guestName}</td><td><a className="admin-link" href={url}>{url}</a></td><td><button className="copy-button" onClick={() => copy(url)}>{copied === url ? "Скопировано" : "Скопировать"}</button></td></tr>;
             })}
             {customUrl && <tr><td>{name}</td><td><a className="admin-link" href={customUrl}>{customUrl}</a></td><td><button className="copy-button" onClick={() => copy(customUrl)}>{copied === customUrl ? "Скопировано" : "Скопировать"}</button></td></tr>}
@@ -231,7 +248,7 @@ function AdminPage() {
 }
 
 function App() {
-  return window.location.pathname.startsWith("/admin") ? <AdminPage /> : <InvitePage />;
+  return appPath().startsWith("/admin") ? <AdminPage /> : <InvitePage />;
 }
 
 createRoot(document.getElementById("root")).render(<App />);

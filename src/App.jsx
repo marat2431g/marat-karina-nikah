@@ -38,6 +38,9 @@ const appBasePath = (() => {
 })();
 
 function appPath() {
+  if (window.location.hash.startsWith("#/")) {
+    return window.location.hash.slice(1);
+  }
   const path = window.location.pathname;
   if (appBasePath && path.startsWith(appBasePath)) {
     return path.slice(appBasePath.length) || "/";
@@ -46,7 +49,7 @@ function appPath() {
 }
 
 function appUrl(path) {
-  return `${window.location.origin}${appBasePath}${path}`;
+  return `${window.location.origin}${appBasePath}/#${path}`;
 }
 
 function slugify(value) {
